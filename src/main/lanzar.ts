@@ -1,8 +1,10 @@
+
 import { ipcMain } from 'electron'
 import { join, resolve, sep, delimiter } from 'path'
 import { promises as fs } from 'fs'
 import { spawn, type ChildProcess } from 'child_process'
 import { createHash } from 'crypto'
+import { asegurarFabric } from './loaders'
 import {
   type Arg,
   type Pendiente,
@@ -15,6 +17,7 @@ import {
   pedirJson
 } from './descargas'
 import { leerInstancia, rutaInstancia } from './instances'
+
 
 const URL_RUNTIMES =
   'https://launchermeta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json'
@@ -128,6 +131,10 @@ export function registrarLanzar(): void {
     const instancia = await leerInstancia(id) // también valida el id
     const v = instancia.version
 
+    if (instancia.loader === 'forge' || instancia.loader === 'neoforge') {
+      throw new Error('Forge y NeoForge todavía no están soportados. Usa vanilla o fabric.')
+    }
+
     const enviar = (canal: string, ...datos: unknown[]): void => {
       if (!evento.sender.isDestroyed()) evento.sender.send(canal, ...datos)
     }
@@ -146,6 +153,19 @@ export function registrarLanzar(): void {
       }
     }
     const json = JSON.parse(await fs.readFile(archivoJson, 'utf-8')) as VersionJson
+
+    if (instancia.loader === 'fabric') {
+      const f = await asegurarFabric(v, avisar)
+      json.mainClass = f.mainClass
+      json.arguments = {
+        jvm: [...(json.arguments?.jvm ?? JVM_ANTIGUO), ...f.jvm],
+        game: [
+          ...(json.arguments?.game ?? (json.minecraftArguments ?? '').split(' ')),
+          ...f.game
+        ]
+      }
+      json.libraries = [...json.libraries, ...f.libraries]
+    }
 
     // 2. Java
     const java = await asegurarJava(json.javaVersion?.component ?? 'jre-legacy', avisar)

@@ -77,7 +77,8 @@ async function sha1De(ruta: string): Promise<string> {
 async function yaValido(p: Pendiente): Promise<boolean> {
   try {
     const st = await fs.stat(p.destino)
-    if (st.size !== p.size) return false
+    if (p.size && st.size !== p.size) return false
+    if (!p.sha1) return st.size > 0
     return (await sha1De(p.destino)) === p.sha1
   } catch {
     return false
@@ -88,8 +89,10 @@ async function descargarArchivo(p: Pendiente): Promise<void> {
   const res = await fetch(p.url)
   if (!res.ok) throw new Error(`HTTP ${res.status} en ${p.url}`)
   const datos = Buffer.from(await res.arrayBuffer())
-  const hash = createHash('sha1').update(datos).digest('hex')
-  if (hash !== p.sha1) throw new Error(`SHA-1 incorrecto en ${p.url}`)
+  if (p.sha1) {
+    const hash = createHash('sha1').update(datos).digest('hex')
+    if (hash !== p.sha1) throw new Error(`SHA-1 incorrecto en ${p.url}`)
+  }
   await fs.mkdir(dirname(p.destino), { recursive: true })
   await fs.writeFile(p.destino, datos)
 }
