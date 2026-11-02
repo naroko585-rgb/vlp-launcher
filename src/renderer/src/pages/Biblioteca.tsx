@@ -9,21 +9,30 @@ function Biblioteca(): React.JSX.Element {
   const [version, setVersion] = useState('')
   const [loader, setLoader] = useState(LOADERS[0])
   const [error, setError] = useState('')
+  const [progreso, setProgreso] = useState<Record<string, string>>({})
 
   async function cargar(): Promise<void> {
     setInstancias(await window.api.instancias.listar())
   }
 
   useEffect(() => {
-    cargar()
-    window.api.minecraft
-      .versiones()
-      .then((lista) => {
-        setVersiones(lista)
-        setVersion(lista[0])
-      })
-      .catch(() => setError('No se pudo cargar la lista de versiones de Minecraft'))
-  }, [])
+  cargar()
+  window.api.minecraft
+    .versiones()
+    .then((lista) => {
+      setVersiones(lista)
+      setVersion(lista[0])
+    })
+    .catch(() => setError('No se pudo cargar la lista de versiones de Minecraft'))
+
+  const quitar = window.api.minecraft.onProgreso((v, p) => {
+    setProgreso((prev) => ({
+      ...prev,
+      [v]: p.fase === 'Listo' ? 'Listo ✓' : `${p.fase}: ${p.hecho}/${p.total}`
+    }))
+  })
+  return quitar
+}, [])
 
   async function crear(): Promise<void> {
     setError('')
@@ -46,7 +55,14 @@ function Biblioteca(): React.JSX.Element {
     await window.api.instancias.eliminar(i.id)
     await cargar()
   }
-
+async function descargar(i: Instancia): Promise<void> {
+  setError('')
+  try {
+    await window.api.minecraft.descargar(i.version)
+  } catch (e) {
+    setError((e as Error).message)
+  }
+}
   return (
     <section>
       <h2>Biblioteca</h2>
@@ -89,13 +105,14 @@ function Biblioteca(): React.JSX.Element {
             <div>
               <h3>{i.nombre}</h3>
               <p className="sub chico">
-                Minecraft {i.version} · {i.loader}
-              </p>
+  Minecraft {i.version} · {i.loader}
+</p>
+{progreso[i.version] && <p className="sub chico">{progreso[i.version]}</p>}
             </div>
             <div className="acciones">
-              <button className="btn" onClick={() => window.api.instancias.abrirCarpeta(i.id)}>
-                Carpeta
-              </button>
+              <button className="btn" onClick={() => descargar(i)}>
+  Descargar
+</button>
               <button className="btn" onClick={() => duplicar(i.id)}>
                 Duplicar
               </button>

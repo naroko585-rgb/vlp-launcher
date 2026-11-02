@@ -10,8 +10,21 @@ const api = {
     eliminar: (id: string) => ipcRenderer.invoke('instancias:eliminar', id),
     abrirCarpeta: (id: string) => ipcRenderer.invoke('instancias:abrirCarpeta', id)
   },
-  minecraft: {
-    versiones: (): Promise<string[]> => ipcRenderer.invoke('minecraft:versiones')
+    minecraft: {
+    versiones: (): Promise<string[]> => ipcRenderer.invoke('minecraft:versiones'),
+    descargar: (version: string): Promise<void> =>
+      ipcRenderer.invoke('minecraft:descargar', version),
+    onProgreso: (
+      callback: (version: string, p: { fase: string; hecho: number; total: number }) => void
+    ): (() => void) => {
+      const manejador = (
+        _e: unknown,
+        version: string,
+        p: { fase: string; hecho: number; total: number }
+      ): void => callback(version, p)
+      ipcRenderer.on('minecraft:progreso', manejador)
+      return () => ipcRenderer.removeListener('minecraft:progreso', manejador)
+    }
   }
 }
 
