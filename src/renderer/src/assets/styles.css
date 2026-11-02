@@ -192,3 +192,33 @@ input {
   margin-top: 10px;
   font-size: 14px;
 }
+
+.titulo-seccion {
+  margin: 24px 0 12px;
+}
+
+.ok {
+  color: #5cd68a;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.apagado {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.mod-info {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.mod-icono {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: var(--panel);
+  object-fit: cover;
+  flex-shrink: 0;
+}

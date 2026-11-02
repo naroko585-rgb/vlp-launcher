@@ -6,6 +6,7 @@ import { registrarInstancias } from './instances'
 import { registrarMinecraft } from './minecraft'
 import { registrarDescargas } from './descargas'
 import { registrarLanzar } from './lanzar'
+import { registrarModrinth } from './modrinth'
 
 function createWindow(): void {
   // Create the browser window.
@@ -44,6 +45,7 @@ app.whenReady().then(() => {
   registrarMinecraft()
   registrarDescargas()
   registrarLanzar()
+  registrarModrinth()
   console.log('[VLP] Handlers registrados')
 
   // Set app user model id for windows

@@ -29,6 +29,14 @@ const api = {
       ipcRenderer.on('minecraft:estado', manejador)
       return () => ipcRenderer.removeListener('minecraft:estado', manejador)
     }
+  },
+  mods: {
+    buscar: (id: string, consulta: string) => ipcRenderer.invoke('mods:buscar', id, consulta),
+    instalar: (id: string, projectId: string) =>
+      ipcRenderer.invoke('mods:instalar', id, projectId),
+    listar: (id: string) => ipcRenderer.invoke('mods:listar', id),
+    alternar: (id: string, archivo: string) => ipcRenderer.invoke('mods:alternar', id, archivo),
+    eliminar: (id: string, archivo: string) => ipcRenderer.invoke('mods:eliminar', id, archivo)
   }
 }
 

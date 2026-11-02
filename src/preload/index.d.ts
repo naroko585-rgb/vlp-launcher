@@ -9,6 +9,21 @@ declare global {
     creada: string
   }
 
+  interface ResultadoMod {
+    project_id: string
+    title: string
+    description: string
+    icon_url: string | null
+    downloads: number
+    author: string
+  }
+
+  interface ModLocal {
+    archivo: string
+    activo: boolean
+    tamano: number
+  }
+
   interface Window {
     electron: ElectronAPI
     api: {
@@ -29,6 +44,16 @@ declare global {
         onEstado: (
           callback: (id: string, e: { estado: string; codigo?: number; salida?: string }) => void
         ) => () => void
+      }
+      mods: {
+        buscar: (id: string, consulta: string) => Promise<ResultadoMod[]>
+        instalar: (
+          id: string,
+          projectId: string
+        ) => Promise<{ instalados: string[]; avisos: string[] }>
+        listar: (id: string) => Promise<ModLocal[]>
+        alternar: (id: string, archivo: string) => Promise<void>
+        eliminar: (id: string, archivo: string) => Promise<void>
       }
     }
   }
