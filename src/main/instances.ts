@@ -17,12 +17,12 @@ const ID_VALIDO = /^[a-f0-9-]{36}$/
 const dirInstancias = (): string => join(app.getPath('appData'), 'VLPLauncher', 'instances')
 
 // Valida el id para que nadie pueda salirse de la carpeta de instancias
-function rutaInstancia(id: string): string {
+export function rutaInstancia(id: string): string {
   if (!ID_VALIDO.test(id)) throw new Error('ID de instancia inválido')
   return join(dirInstancias(), id)
 }
 
-async function leerInstancia(id: string): Promise<Instancia> {
+export async function leerInstancia(id: string): Promise<Instancia> {
   const texto = await fs.readFile(join(rutaInstancia(id), 'instance.json'), 'utf-8')
   return JSON.parse(texto) as Instancia
 }
@@ -77,6 +77,7 @@ export async function duplicarInstancia(id: string): Promise<Instancia> {
     nombre: `${original.nombre} (copia)`.slice(0, 40),
     creada: new Date().toISOString()
   }
+
   await fs.cp(rutaInstancia(id), rutaInstancia(copia.id), { recursive: true })
   await fs.writeFile(
     join(rutaInstancia(copia.id), 'instance.json'),

@@ -19,11 +19,15 @@ declare global {
         eliminar: (id: string) => Promise<void>
         abrirCarpeta: (id: string) => Promise<void>
       }
-            minecraft: {
+      minecraft: {
         versiones: () => Promise<string[]>
         descargar: (version: string) => Promise<void>
         onProgreso: (
           callback: (version: string, p: { fase: string; hecho: number; total: number }) => void
+        ) => () => void
+        jugar: (id: string, usuario: string) => Promise<void>
+        onEstado: (
+          callback: (id: string, e: { estado: string; codigo?: number; salida?: string }) => void
         ) => () => void
       }
     }

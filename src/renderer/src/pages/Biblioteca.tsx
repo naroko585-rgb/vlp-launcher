@@ -10,29 +10,52 @@ function Biblioteca(): React.JSX.Element {
   const [loader, setLoader] = useState(LOADERS[0])
   const [error, setError] = useState('')
   const [progreso, setProgreso] = useState<Record<string, string>>({})
+  const [estados, setEstados] = useState<Record<string, string>>({})
+  const [usuario, setUsuario] = useState(() => localStorage.getItem('vlp_usuario') ?? 'Jugador')
 
   async function cargar(): Promise<void> {
     setInstancias(await window.api.instancias.listar())
   }
 
   useEffect(() => {
-  cargar()
-  window.api.minecraft
-    .versiones()
-    .then((lista) => {
-      setVersiones(lista)
-      setVersion(lista[0])
-    })
-    .catch(() => setError('No se pudo cargar la lista de versiones de Minecraft'))
+    cargar()
+    window.api.minecraft
+      .versiones()
+      .then((lista) => {
+        setVersiones(lista)
+        setVersion(lista[0])
+      })
+      .catch(() => setError('No se pudo cargar la lista de versiones de Minecraft'))
 
-  const quitar = window.api.minecraft.onProgreso((v, p) => {
-    setProgreso((prev) => ({
-      ...prev,
-      [v]: p.fase === 'Listo' ? 'Listo ✓' : `${p.fase}: ${p.hecho}/${p.total}`
-    }))
-  })
-  return quitar
-}, [])
+    return window.api.minecraft.onProgreso((v, p) => {
+      setProgreso((prev) => ({
+        ...prev,
+        [v]: p.fase === 'Listo' ? 'Listo ✓' : `${p.fase}: ${p.hecho}/${p.total}`
+      }))
+    })
+  }, [])
+
+  useEffect(() => {
+    return window.api.minecraft.onEstado((id, e) => {
+      if (e.estado === 'corriendo') {
+        setEstados((p) => ({ ...p, [id]: 'Jugando…' }))
+      } else {
+        setEstados((p) => {
+          const n = { ...p }
+          delete n[id]
+          return n
+        })
+        if (e.codigo !== 0) {
+          setError(`Minecraft se cerró con código ${e.codigo}.\n${e.salida ?? ''}`)
+        }
+      }
+    })
+  }, [])
+
+  function cambiarUsuario(v: string): void {
+    setUsuario(v)
+    localStorage.setItem('vlp_usuario', v)
+  }
 
   async function crear(): Promise<void> {
     setError('')
@@ -55,14 +78,31 @@ function Biblioteca(): React.JSX.Element {
     await window.api.instancias.eliminar(i.id)
     await cargar()
   }
-async function descargar(i: Instancia): Promise<void> {
-  setError('')
-  try {
-    await window.api.minecraft.descargar(i.version)
-  } catch (e) {
-    setError((e as Error).message)
+
+  async function descargar(i: Instancia): Promise<void> {
+    setError('')
+    try {
+      await window.api.minecraft.descargar(i.version)
+    } catch (e) {
+      setError((e as Error).message)
+    }
   }
-}
+
+  async function jugar(i: Instancia): Promise<void> {
+    setError('')
+    setEstados((p) => ({ ...p, [i.id]: 'Preparando…' }))
+    try {
+      await window.api.minecraft.jugar(i.id, usuario)
+    } catch (e) {
+      setEstados((p) => {
+        const n = { ...p }
+        delete n[i.id]
+        return n
+      })
+      setError((e as Error).message)
+    }
+  }
+
   return (
     <section>
       <h2>Biblioteca</h2>
@@ -91,6 +131,16 @@ async function descargar(i: Instancia): Promise<void> {
             Crear
           </button>
         </div>
+
+        <div className="fila">
+          <input
+            placeholder="Usuario sin conexión"
+            value={usuario}
+            maxLength={16}
+            onChange={(e) => cambiarUsuario(e.target.value)}
+          />
+        </div>
+
         {error && <p className="error">{error}</p>}
       </div>
 
@@ -105,14 +155,25 @@ async function descargar(i: Instancia): Promise<void> {
             <div>
               <h3>{i.nombre}</h3>
               <p className="sub chico">
-  Minecraft {i.version} · {i.loader}
-</p>
-{progreso[i.version] && <p className="sub chico">{progreso[i.version]}</p>}
+                Minecraft {i.version} · {i.loader}
+              </p>
+              {progreso[i.version] && <p className="sub chico">{progreso[i.version]}</p>}
+              {estados[i.id] && <p className="sub chico estado">{estados[i.id]}</p>}
             </div>
             <div className="acciones">
+              <button
+                className="btn primario"
+                onClick={() => jugar(i)}
+                disabled={!!estados[i.id]}
+              >
+                Jugar
+              </button>
               <button className="btn" onClick={() => descargar(i)}>
-  Descargar
-</button>
+                Descargar
+              </button>
+              <button className="btn" onClick={() => window.api.instancias.abrirCarpeta(i.id)}>
+                Carpeta
+              </button>
               <button className="btn" onClick={() => duplicar(i.id)}>
                 Duplicar
               </button>

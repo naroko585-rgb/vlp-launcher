@@ -4,20 +4,20 @@ import { promises as fs } from 'fs'
 import { createHash } from 'crypto'
 import { obtenerManifest } from './minecraft'
 
-interface Regla {
+export interface Regla {
   action: 'allow' | 'disallow'
   os?: { name?: string; arch?: string }
   features?: Record<string, boolean>
 }
 
-interface Artefacto {
+export interface Artefacto {
   path?: string
   url: string
   sha1: string
   size: number
 }
 
-interface Libreria {
+export interface Libreria {
   name: string
   rules?: Regla[]
   downloads?: {
@@ -27,18 +27,25 @@ interface Libreria {
   natives?: Record<string, string>
 }
 
-interface VersionJson {
-  id: string
-  downloads: { client: Artefacto }
-  libraries: Libreria[]
-  assetIndex: { id: string; url: string; sha1: string; size: number }
-}
-
-interface Pendiente {
+export interface Pendiente {
   url: string
   sha1: string
   size: number
   destino: string
+}
+
+export type Arg = string | { rules?: Regla[]; value: string | string[] }
+
+export interface VersionJson {
+  id: string
+  type: string
+  mainClass: string
+  javaVersion?: { component: string; majorVersion: number }
+  arguments?: { game: Arg[]; jvm: Arg[] }
+  minecraftArguments?: string
+  downloads: { client: Artefacto }
+  libraries: Libreria[]
+  assetIndex: { id: string; url: string; sha1: string; size: number }
 }
 
 export interface Progreso {
@@ -47,10 +54,10 @@ export interface Progreso {
   total: number
 }
 
-const dirShared = (): string => join(app.getPath('appData'), 'VLPLauncher', 'shared')
+export const dirShared = (): string => join(app.getPath('appData'), 'VLPLauncher', 'shared')
 
 // Decide si una librería aplica a Windows x64
-function permitida(reglas?: Regla[]): boolean {
+export function permitida(reglas?: Regla[]): boolean {
   if (!reglas) return true
   let ok = false
   for (const r of reglas) {
@@ -88,7 +95,7 @@ async function descargarArchivo(p: Pendiente): Promise<void> {
 }
 
 // Descarga una lista de archivos con varios hilos a la vez
-async function descargarLote(
+export async function descargarLote(
   lista: Pendiente[],
   fase: string,
   avisar: (p: Progreso) => void
@@ -124,7 +131,7 @@ async function descargarLote(
   await Promise.all(Array.from({ length: 10 }, trabajador))
 }
 
-async function pedirJson<T>(url: string): Promise<T> {
+export async function pedirJson<T>(url: string): Promise<T> {
   const res = await fetch(url)
   if (!res.ok) throw new Error(`HTTP ${res.status} en ${url}`)
   return (await res.json()) as T

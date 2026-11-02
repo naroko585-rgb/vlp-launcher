@@ -5,6 +5,7 @@ import icon from '../../resources/icon.png?asset'
 import { registrarInstancias } from './instances'
 import { registrarMinecraft } from './minecraft'
 import { registrarDescargas } from './descargas'
+import { registrarLanzar } from './lanzar'
 
 function createWindow(): void {
   // Create the browser window.
@@ -42,6 +43,7 @@ app.whenReady().then(() => {
   registrarInstancias()
   registrarMinecraft()
   registrarDescargas()
+  registrarLanzar()
   console.log('[VLP] Handlers registrados')
 
   // Set app user model id for windows
