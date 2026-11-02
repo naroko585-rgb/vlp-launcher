@@ -1,12 +1,20 @@
-import { contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
-// Custom APIs for renderer
-const api = {}
+const api = {
+  instancias: {
+    listar: () => ipcRenderer.invoke('instancias:listar'),
+    crear: (datos: { nombre: string; version: string; loader: string }) =>
+      ipcRenderer.invoke('instancias:crear', datos),
+    duplicar: (id: string) => ipcRenderer.invoke('instancias:duplicar', id),
+    eliminar: (id: string) => ipcRenderer.invoke('instancias:eliminar', id),
+    abrirCarpeta: (id: string) => ipcRenderer.invoke('instancias:abrirCarpeta', id)
+  },
+  minecraft: {
+    versiones: (): Promise<string[]> => ipcRenderer.invoke('minecraft:versiones')
+  }
+}
 
-// Use `contextBridge` APIs to expose Electron APIs to
-// renderer only if context isolation is enabled, otherwise
-// just add to the DOM global.
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', electronAPI)
