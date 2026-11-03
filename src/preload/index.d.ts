@@ -42,6 +42,13 @@ declare global {
     idInstancia: string
   }
 
+  interface EstadoActualizacion {
+    estado: 'inactivo' | 'buscando' | 'disponible' | 'al_dia' | 'descargando' | 'listo' | 'error'
+    version?: string
+    porcentaje?: number
+    mensaje?: string
+  }
+
   interface Window {
     electron: ElectronAPI
     api: {
@@ -85,6 +92,14 @@ declare global {
         onProgreso: (
           callback: (id: string, p: { fase: string; hecho: number; total: number }) => void
         ) => () => void
+      }
+      app: {
+        version: () => Promise<string>
+        estadoActualizacion: () => Promise<EstadoActualizacion>
+        buscarActualizacion: () => Promise<void>
+        descargarActualizacion: () => Promise<void>
+        instalarActualizacion: () => Promise<void>
+        onActualizacion: (callback: (e: EstadoActualizacion) => void) => () => void
       }
     }
   }

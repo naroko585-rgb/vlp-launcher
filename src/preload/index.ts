@@ -3,6 +3,12 @@ import { electronAPI } from '@electron-toolkit/preload'
 
 type Progreso = { fase: string; hecho: number; total: number }
 type EstadoJuego = { estado: string; codigo?: number; salida?: string }
+type EstadoActualizacion = {
+  estado: string
+  version?: string
+  porcentaje?: number
+  mensaje?: string
+}
 
 const api = {
   instancias: {
@@ -51,6 +57,19 @@ const api = {
       const manejador = (_e: unknown, id: string, p: Progreso): void => callback(id, p)
       ipcRenderer.on('eventos:progreso', manejador)
       return () => ipcRenderer.removeListener('eventos:progreso', manejador)
+    }
+  },
+  app: {
+    version: (): Promise<string> => ipcRenderer.invoke('app:version'),
+    estadoActualizacion: (): Promise<EstadoActualizacion> =>
+      ipcRenderer.invoke('app:estadoActualizacion'),
+    buscarActualizacion: (): Promise<void> => ipcRenderer.invoke('app:buscarActualizacion'),
+    descargarActualizacion: (): Promise<void> => ipcRenderer.invoke('app:descargarActualizacion'),
+    instalarActualizacion: (): Promise<void> => ipcRenderer.invoke('app:instalarActualizacion'),
+    onActualizacion: (callback: (e: EstadoActualizacion) => void): (() => void) => {
+      const manejador = (_e: unknown, estado: EstadoActualizacion): void => callback(estado)
+      ipcRenderer.on('app:actualizacion', manejador)
+      return () => ipcRenderer.removeListener('app:actualizacion', manejador)
     }
   }
 }

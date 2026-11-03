@@ -8,6 +8,7 @@ import { registrarDescargas } from './descargas'
 import { registrarLanzar } from './lanzar'
 import { registrarModrinth } from './modrinth'
 import { registrarEventos } from './eventos'
+import { registrarActualizador } from './actualizador'
 
 function createWindow(): void {
   // Create the browser window.
@@ -48,10 +49,11 @@ app.whenReady().then(() => {
   registrarLanzar()
   registrarModrinth()
   registrarEventos()
+  registrarActualizador()
   console.log('[VLP] Handlers registrados')
 
   // Set app user model id for windows
-  electronApp.setAppUserModelId('com.electron')
+  electronApp.setAppUserModelId('com.vlp.launcher')
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
