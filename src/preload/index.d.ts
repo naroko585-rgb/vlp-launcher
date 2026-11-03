@@ -8,6 +8,7 @@ declare global {
     loader: 'vanilla' | 'fabric' | 'forge' | 'neoforge'
     creada: string
     loaderVersion?: string
+    memoriaMB?: number
     evento?: { id: string; revision: number; manifiesto: string; servidor: string }
   }
 
@@ -50,6 +51,10 @@ declare global {
         duplicar: (id: string) => Promise<Instancia>
         eliminar: (id: string) => Promise<void>
         abrirCarpeta: (id: string) => Promise<void>
+        ajustarMemoria: (id: string, mb: number) => Promise<Instancia>
+      }
+      sistema: {
+        memoriaMaxima: () => Promise<number>
       }
       minecraft: {
         versiones: () => Promise<string[]>

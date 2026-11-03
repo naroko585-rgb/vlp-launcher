@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { Component, useState } from 'react'
+import type { ErrorInfo, ReactNode } from 'react'
 import Inicio from './pages/Inicio'
 import Eventos from './pages/Eventos'
 import Biblioteca from './pages/Biblioteca'
@@ -12,6 +13,37 @@ const MENU: { id: Seccion; nombre: string }[] = [
   { id: 'biblioteca', nombre: 'Biblioteca' },
   { id: 'mods', nombre: 'Mods' }
 ]
+
+// Muestra el error en pantalla en vez de dejar todo en negro
+class ProteccionErrores extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
+  state = { error: null as Error | null }
+
+  static getDerivedStateFromError(error: Error): { error: Error } {
+    return { error }
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo): void {
+    console.error('Error en la interfaz:', error, info.componentStack)
+  }
+
+  render(): ReactNode {
+    if (this.state.error) {
+      return (
+        <div className="tarjeta">
+          <h3>Algo falló al mostrar esta sección</h3>
+          <p className="error">{this.state.error.message}</p>
+          <button className="btn" onClick={() => this.setState({ error: null })}>
+            Reintentar
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 function App(): React.JSX.Element {
   const [seccion, setSeccion] = useState<Seccion>('inicio')
@@ -40,10 +72,12 @@ function App(): React.JSX.Element {
       </aside>
 
       <main className="contenido">
-        {seccion === 'inicio' && <Inicio />}
-        {seccion === 'eventos' && <Eventos />}
-        {seccion === 'biblioteca' && <Biblioteca />}
-        {seccion === 'mods' && <Mods />}
+        <ProteccionErrores key={seccion}>
+          {seccion === 'inicio' && <Inicio />}
+          {seccion === 'eventos' && <Eventos />}
+          {seccion === 'biblioteca' && <Biblioteca />}
+          {seccion === 'mods' && <Mods />}
+        </ProteccionErrores>
       </main>
     </div>
   )

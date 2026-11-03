@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 
 const LOADERS = ['vanilla', 'fabric', 'forge', 'neoforge']
+const PASOS_RAM = [1024, 2048, 3072, 4096, 6144, 8192, 12288, 16384]
+
+function etiquetaRam(mb: number): string {
+  return `${mb / 1024} GB`
+}
 
 function Biblioteca(): React.JSX.Element {
   const [instancias, setInstancias] = useState<Instancia[]>([])
@@ -11,6 +16,7 @@ function Biblioteca(): React.JSX.Element {
   const [error, setError] = useState('')
   const [progreso, setProgreso] = useState<Record<string, string>>({})
   const [estados, setEstados] = useState<Record<string, string>>({})
+  const [ramMax, setRamMax] = useState(4096)
   const [usuario, setUsuario] = useState(() => localStorage.getItem('vlp_usuario') ?? 'Jugador')
 
   async function cargar(): Promise<void> {
@@ -19,6 +25,7 @@ function Biblioteca(): React.JSX.Element {
 
   useEffect(() => {
     cargar()
+    window.api.sistema.memoriaMaxima().then(setRamMax)
     window.api.minecraft
       .versiones()
       .then((lista) => {
@@ -57,6 +64,12 @@ function Biblioteca(): React.JSX.Element {
     localStorage.setItem('vlp_usuario', v)
   }
 
+  function opcionesRam(actual: number): number[] {
+    const set = new Set(PASOS_RAM.filter((p) => p <= ramMax))
+    set.add(actual)
+    return [...set].sort((a, b) => a - b)
+  }
+
   async function crear(): Promise<void> {
     setError('')
     try {
@@ -83,6 +96,16 @@ function Biblioteca(): React.JSX.Element {
     setError('')
     try {
       await window.api.minecraft.descargar(i.version)
+    } catch (e) {
+      setError((e as Error).message)
+    }
+  }
+
+  async function cambiarRam(i: Instancia, mb: number): Promise<void> {
+    setError('')
+    try {
+      await window.api.instancias.ajustarMemoria(i.id, mb)
+      await cargar()
     } catch (e) {
       setError((e as Error).message)
     }
@@ -150,48 +173,63 @@ function Biblioteca(): React.JSX.Element {
             <p>Todavía no tienes instancias.</p>
           </div>
         )}
-        {instancias.map((i) => (
-          <div key={i.id} className="tarjeta instancia">
-            <div>
-              <h3>
-                {i.nombre}
-                {i.evento && <span className="insignia">Evento · rev {i.evento.revision}</span>}
-              </h3>
-              <p className="sub chico">
-                Minecraft {i.version} · {i.loader}
-                {i.loaderVersion ? ` ${i.loaderVersion}` : ''}
-              </p>
-              {i.evento?.servidor && (
+        {instancias.map((i) => {
+          const ram = i.memoriaMB ?? 2048
+          return (
+            <div key={i.id} className="tarjeta instancia">
+              <div>
+                <h3>
+                  {i.nombre}
+                  {i.evento && <span className="insignia">Evento · rev {i.evento.revision}</span>}
+                </h3>
                 <p className="sub chico">
-                  Servidor: <span className="seleccionable">{i.evento.servidor}</span>
+                  Minecraft {i.version} · {i.loader}
+                  {i.loaderVersion ? ` ${i.loaderVersion}` : ''}
                 </p>
-              )}
-              {progreso[i.version] && <p className="sub chico">{progreso[i.version]}</p>}
-              {estados[i.id] && <p className="sub chico estado">{estados[i.id]}</p>}
+                {i.evento?.servidor && (
+                  <p className="sub chico">
+                    Servidor: <span className="seleccionable">{i.evento.servidor}</span>
+                  </p>
+                )}
+                {progreso[i.version] && <p className="sub chico">{progreso[i.version]}</p>}
+                {estados[i.id] && <p className="sub chico estado">{estados[i.id]}</p>}
+              </div>
+              <div className="acciones">
+                <select
+                  title="Memoria RAM para esta instancia"
+                  value={ram}
+                  disabled={!!estados[i.id]}
+                  onChange={(e) => cambiarRam(i, Number(e.target.value))}
+                >
+                  {opcionesRam(ram).map((mb) => (
+                    <option key={mb} value={mb}>
+                      RAM {etiquetaRam(mb)}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="btn primario"
+                  onClick={() => jugar(i)}
+                  disabled={!!estados[i.id]}
+                >
+                  Jugar
+                </button>
+                <button className="btn" onClick={() => descargar(i)}>
+                  Descargar
+                </button>
+                <button className="btn" onClick={() => window.api.instancias.abrirCarpeta(i.id)}>
+                  Carpeta
+                </button>
+                <button className="btn" onClick={() => duplicar(i.id)}>
+                  {i.evento ? 'Copia editable' : 'Duplicar'}
+                </button>
+                <button className="btn peligro" onClick={() => eliminar(i)}>
+                  Eliminar
+                </button>
+              </div>
             </div>
-            <div className="acciones">
-              <button
-                className="btn primario"
-                onClick={() => jugar(i)}
-                disabled={!!estados[i.id]}
-              >
-                Jugar
-              </button>
-              <button className="btn" onClick={() => descargar(i)}>
-                Descargar
-              </button>
-              <button className="btn" onClick={() => window.api.instancias.abrirCarpeta(i.id)}>
-                Carpeta
-              </button>
-              <button className="btn" onClick={() => duplicar(i.id)}>
-                {i.evento ? 'Copia editable' : 'Duplicar'}
-              </button>
-              <button className="btn peligro" onClick={() => eliminar(i)}>
-                Eliminar
-              </button>
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </section>
   )

@@ -2,6 +2,7 @@ import { app, ipcMain, shell } from 'electron'
 import { join } from 'path'
 import { promises as fs } from 'fs'
 import { randomUUID } from 'crypto'
+import os from 'os'
 
 export interface Instancia {
   id: string
@@ -10,6 +11,7 @@ export interface Instancia {
   loader: 'vanilla' | 'fabric' | 'forge' | 'neoforge'
   creada: string
   loaderVersion?: string
+  memoriaMB?: number
   evento?: { id: string; revision: number; manifiesto: string; servidor: string }
 }
 
@@ -17,6 +19,12 @@ const LOADERS = ['vanilla', 'fabric', 'forge', 'neoforge']
 const ID_VALIDO = /^[a-f0-9-]{36}$/
 
 const dirInstancias = (): string => join(app.getPath('appData'), 'VLPLauncher', 'instances')
+
+// Máximo permitido: 75 % de la RAM del equipo (mínimo 2 GB), en pasos de 512 MB
+function memoriaMaximaMB(): number {
+  const total = os.totalmem() / 1024 / 1024
+  return Math.max(2048, Math.floor((total * 0.75) / 512) * 512)
+}
 
 // Valida el id para que nadie pueda salirse de la carpeta de instancias
 export function rutaInstancia(id: string): string {
@@ -99,6 +107,17 @@ export async function eliminarInstancia(id: string): Promise<void> {
   await fs.rm(rutaInstancia(id), { recursive: true, force: true })
 }
 
+export async function ajustarMemoria(id: string, mb: unknown): Promise<Instancia> {
+  const inst = await leerInstancia(id)
+  const max = memoriaMaximaMB()
+  if (typeof mb !== 'number' || !Number.isInteger(mb) || mb < 1024 || mb > max) {
+    throw new Error(`La memoria debe estar entre 1024 y ${max} MB`)
+  }
+  inst.memoriaMB = mb
+  await guardarInstancia(inst)
+  return inst
+}
+
 export function registrarInstancias(): void {
   ipcMain.handle('instancias:listar', () => listarInstancias())
   ipcMain.handle('instancias:crear', (_e, datos) => crearInstancia(datos))
@@ -107,4 +126,6 @@ export function registrarInstancias(): void {
   ipcMain.handle('instancias:abrirCarpeta', async (_e, id: string) => {
     await shell.openPath(rutaInstancia(id))
   })
+  ipcMain.handle('instancias:memoria', (_e, id: string, mb: unknown) => ajustarMemoria(id, mb))
+  ipcMain.handle('sistema:memoria', () => memoriaMaximaMB())
 }

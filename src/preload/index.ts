@@ -11,7 +11,11 @@ const api = {
       ipcRenderer.invoke('instancias:crear', datos),
     duplicar: (id: string) => ipcRenderer.invoke('instancias:duplicar', id),
     eliminar: (id: string) => ipcRenderer.invoke('instancias:eliminar', id),
-    abrirCarpeta: (id: string) => ipcRenderer.invoke('instancias:abrirCarpeta', id)
+    abrirCarpeta: (id: string) => ipcRenderer.invoke('instancias:abrirCarpeta', id),
+    ajustarMemoria: (id: string, mb: number) => ipcRenderer.invoke('instancias:memoria', id, mb)
+  },
+  sistema: {
+    memoriaMaxima: (): Promise<number> => ipcRenderer.invoke('sistema:memoria')
   },
   minecraft: {
     versiones: (): Promise<string[]> => ipcRenderer.invoke('minecraft:versiones'),

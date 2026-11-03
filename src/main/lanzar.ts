@@ -201,7 +201,8 @@ export function registrarLanzar(): void {
       json.arguments?.game ?? (json.minecraftArguments ?? '').split(' '),
       vars
     )
-    const args = ['-Xmx2G', ...jvm, json.mainClass, ...juego]
+    const memoria = instancia.memoriaMB ?? 2048
+    const args = [`-Xmx${memoria}M`, '-Xms512M', ...jvm, json.mainClass, ...juego]
 
     // 5. Lanzar
     const proc = spawn(java, args, { cwd: gameDir, windowsHide: true })
