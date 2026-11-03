@@ -9,6 +9,8 @@ export interface Instancia {
   version: string
   loader: 'vanilla' | 'fabric' | 'forge' | 'neoforge'
   creada: string
+  loaderVersion?: string
+  evento?: { id: string; revision: number; manifiesto: string; servidor: string }
 }
 
 const LOADERS = ['vanilla', 'fabric', 'forge', 'neoforge']
@@ -27,6 +29,10 @@ export async function leerInstancia(id: string): Promise<Instancia> {
   return JSON.parse(texto) as Instancia
 }
 
+export async function guardarInstancia(inst: Instancia): Promise<void> {
+  await fs.writeFile(join(rutaInstancia(inst.id), 'instance.json'), JSON.stringify(inst, null, 2))
+}
+
 export async function listarInstancias(): Promise<Instancia[]> {
   await fs.mkdir(dirInstancias(), { recursive: true })
   const entradas = await fs.readdir(dirInstancias(), { withFileTypes: true })
@@ -43,6 +49,19 @@ export async function listarInstancias(): Promise<Instancia[]> {
   return lista.sort((a, b) => b.creada.localeCompare(a.creada))
 }
 
+// Crea la carpeta y el instance.json (sin validar: quien llama ya validó)
+export async function crearInstanciaDesdeDatos(
+  datos: Omit<Instancia, 'id' | 'creada'>
+): Promise<Instancia> {
+  const instancia: Instancia = { ...datos, id: randomUUID(), creada: new Date().toISOString() }
+  const base = rutaInstancia(instancia.id)
+  for (const sub of ['mods', 'config', 'saves', 'resourcepacks']) {
+    await fs.mkdir(join(base, 'minecraft', sub), { recursive: true })
+  }
+  await guardarInstancia(instancia)
+  return instancia
+}
+
 export async function crearInstancia(datos: {
   nombre: string
   version: string
@@ -53,20 +72,11 @@ export async function crearInstancia(datos: {
   if (!LOADERS.includes(datos.loader)) throw new Error('Loader inválido')
   if (!/^\d+\.\d+(\.\d+)?$/.test(datos.version)) throw new Error('Versión inválida')
 
-  const instancia: Instancia = {
-    id: randomUUID(),
+  return crearInstanciaDesdeDatos({
     nombre,
     version: datos.version,
-    loader: datos.loader as Instancia['loader'],
-    creada: new Date().toISOString()
-  }
-
-  const base = rutaInstancia(instancia.id)
-  for (const sub of ['mods', 'config', 'saves', 'resourcepacks']) {
-    await fs.mkdir(join(base, 'minecraft', sub), { recursive: true })
-  }
-  await fs.writeFile(join(base, 'instance.json'), JSON.stringify(instancia, null, 2))
-  return instancia
+    loader: datos.loader as Instancia['loader']
+  })
 }
 
 export async function duplicarInstancia(id: string): Promise<Instancia> {
@@ -77,12 +87,11 @@ export async function duplicarInstancia(id: string): Promise<Instancia> {
     nombre: `${original.nombre} (copia)`.slice(0, 40),
     creada: new Date().toISOString()
   }
+  delete copia.evento // la copia es editable y ya no pertenece al evento
 
   await fs.cp(rutaInstancia(id), rutaInstancia(copia.id), { recursive: true })
-  await fs.writeFile(
-    join(rutaInstancia(copia.id), 'instance.json'),
-    JSON.stringify(copia, null, 2)
-  )
+  await fs.rm(join(rutaInstancia(copia.id), 'evento-archivos.json'), { force: true })
+  await guardarInstancia(copia)
   return copia
 }
 

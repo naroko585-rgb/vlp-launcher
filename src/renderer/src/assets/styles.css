@@ -115,6 +115,7 @@ nav {
 .tarjeta h3 {
   margin-bottom: 8px;
 }
+
 .formulario {
   margin-bottom: 20px;
 }
@@ -165,6 +166,16 @@ input {
   color: #ff5c5c;
 }
 
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn.mini {
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
 .lista {
   display: flex;
   flex-direction: column;
@@ -175,32 +186,41 @@ input {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
 }
 
 .instancia .sub.chico {
   font-size: 13px;
-  margin: 0;
+  margin: 0 0 2px;
 }
 
 .acciones {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .error {
   color: #ff5c5c;
   margin-top: 10px;
   font-size: 14px;
-}
-
-.titulo-seccion {
-  margin: 24px 0 12px;
+  white-space: pre-wrap;
+  user-select: text;
 }
 
 .ok {
   color: #5cd68a;
   margin-top: 10px;
   font-size: 14px;
+}
+
+.estado {
+  color: var(--acento);
+}
+
+.titulo-seccion {
+  margin: 24px 0 12px;
 }
 
 .apagado {
@@ -221,4 +241,27 @@ input {
   background: var(--panel);
   object-fit: cover;
   flex-shrink: 0;
+}
+
+.insignia {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--borde);
+  background: var(--panel);
+  color: var(--texto-suave);
+  font-size: 11px;
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+.insignia.nueva {
+  border-color: var(--acento);
+  color: var(--acento);
+}
+
+.seleccionable {
+  user-select: text;
+  color: var(--texto);
 }

@@ -1,10 +1,8 @@
-
 import { ipcMain } from 'electron'
 import { join, resolve, sep, delimiter } from 'path'
 import { promises as fs } from 'fs'
 import { spawn, type ChildProcess } from 'child_process'
 import { createHash } from 'crypto'
-import { asegurarFabric } from './loaders'
 import {
   type Arg,
   type Pendiente,
@@ -17,7 +15,7 @@ import {
   pedirJson
 } from './descargas'
 import { leerInstancia, rutaInstancia } from './instances'
-
+import { asegurarFabric } from './loaders'
 
 const URL_RUNTIMES =
   'https://launchermeta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json'
@@ -154,8 +152,9 @@ export function registrarLanzar(): void {
     }
     const json = JSON.parse(await fs.readFile(archivoJson, 'utf-8')) as VersionJson
 
+    // 2. Loader
     if (instancia.loader === 'fabric') {
-      const f = await asegurarFabric(v, avisar)
+      const f = await asegurarFabric(v, avisar, instancia.loaderVersion)
       json.mainClass = f.mainClass
       json.arguments = {
         jvm: [...(json.arguments?.jvm ?? JVM_ANTIGUO), ...f.jvm],
@@ -167,11 +166,12 @@ export function registrarLanzar(): void {
       json.libraries = [...json.libraries, ...f.libraries]
     }
 
-    // 2. Java
+    // 3. Java
     const java = await asegurarJava(json.javaVersion?.component ?? 'jre-legacy', avisar)
 
-    // 3. Argumentos
+    // 4. Argumentos
     const gameDir = join(rutaInstancia(id), 'minecraft')
+    await fs.mkdir(gameDir, { recursive: true })
     const natives = join(dirShared(), 'natives', v)
     await fs.mkdir(natives, { recursive: true })
 
@@ -203,7 +203,7 @@ export function registrarLanzar(): void {
     )
     const args = ['-Xmx2G', ...jvm, json.mainClass, ...juego]
 
-    // 4. Lanzar
+    // 5. Lanzar
     const proc = spawn(java, args, { cwd: gameDir, windowsHide: true })
     procesos.set(id, proc)
 

@@ -7,6 +7,8 @@ declare global {
     version: string
     loader: 'vanilla' | 'fabric' | 'forge' | 'neoforge'
     creada: string
+    loaderVersion?: string
+    evento?: { id: string; revision: number; manifiesto: string; servidor: string }
   }
 
   interface ResultadoMod {
@@ -22,6 +24,21 @@ declare global {
     archivo: string
     activo: boolean
     tamano: number
+  }
+
+  interface InfoEvento {
+    id: string
+    nombre: string
+    descripcion: string
+    minecraft: string
+    loader: string
+    revision: number
+    servidor: string
+    archivos: number
+    tamano: number
+    error: string
+    estado: 'no_instalado' | 'al_dia' | 'actualizacion'
+    idInstancia: string
   }
 
   interface Window {
@@ -54,6 +71,15 @@ declare global {
         listar: (id: string) => Promise<ModLocal[]>
         alternar: (id: string, archivo: string) => Promise<void>
         eliminar: (id: string, archivo: string) => Promise<void>
+      }
+      eventos: {
+        config: () => Promise<{ catalogoUrl: string }>
+        guardarConfig: (url: string) => Promise<string>
+        listar: () => Promise<{ lista: InfoEvento[]; sinConexion: boolean }>
+        instalar: (id: string) => Promise<Instancia>
+        onProgreso: (
+          callback: (id: string, p: { fase: string; hecho: number; total: number }) => void
+        ) => () => void
       }
     }
   }

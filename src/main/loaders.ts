@@ -12,6 +12,8 @@ import {
 
 const META = 'https://meta.fabricmc.net/v2/versions/loader'
 const NOMBRE_MAVEN = /^[\w.-]+:[\w.-]+:[\w.+-]+(:[\w.-]+)?$/
+const VERSION_LOADER = /^[\w.+-]{1,40}$/
+const VERSION_MC = /^\d+\.\d+(\.\d+)?$/
 
 interface PerfilFabric {
   mainClass: string
@@ -20,6 +22,7 @@ interface PerfilFabric {
 }
 
 export interface PerfilLoader {
+  version: string
   mainClass: string
   jvm: Arg[]
   game: Arg[]
@@ -51,34 +54,80 @@ function aLibreria(l: PerfilFabric['libraries'][number]): Libreria {
   }
 }
 
-// Descarga el perfil de Fabric y sus librerías. Si no hay internet, usa la copia guardada.
+async function leerCache(archivo: string): Promise<PerfilFabric | null> {
+  try {
+    return JSON.parse(await fs.readFile(archivo, 'utf-8')) as PerfilFabric
+  } catch {
+    return null
+  }
+}
+
+// Sin internet y sin versión fija: usa la copia guardada más reciente
+async function cacheMasReciente(
+  dir: string,
+  mc: string
+): Promise<{ version: string; perfil: PerfilFabric } | null> {
+  try {
+    const prefijo = `${mc}-`
+    const nombres = (await fs.readdir(dir))
+      .filter((n) => n.startsWith(prefijo) && n.endsWith('.json'))
+      .sort()
+    const ultimo = nombres[nombres.length - 1]
+    if (!ultimo) return null
+    const perfil = await leerCache(join(dir, ultimo))
+    return perfil ? { version: ultimo.slice(prefijo.length, -5), perfil } : null
+  } catch {
+    return null
+  }
+}
+
+// Descarga el perfil de Fabric y sus librerías.
+// Si se indica "fijada", usa exactamente esa versión del loader.
 export async function asegurarFabric(
   mc: string,
-  avisar: (p: Progreso) => void
+  avisar: (p: Progreso) => void,
+  fijada?: string
 ): Promise<PerfilLoader> {
-  const archivo = join(dirShared(), 'loaders', 'fabric', `${mc}.json`)
-  let perfil: PerfilFabric
+  if (!VERSION_MC.test(mc)) throw new Error('Versión de Minecraft inválida')
+  if (fijada && !VERSION_LOADER.test(fijada)) throw new Error('Versión de Fabric inválida')
+
+  const dir = join(dirShared(), 'loaders', 'fabric')
+  const archivoDe = (v: string): string => join(dir, `${mc}-${v}.json`)
+  let perfil: PerfilFabric | null = null
+  let version = fijada ?? ''
 
   avisar({ fase: 'Buscando Fabric', hecho: 0, total: 1 })
-  try {
-    const lista = await pedirJson<{ loader: { version: string; stable: boolean } }[]>(
-      `${META}/${encodeURIComponent(mc)}`
-    )
-    const elegido = lista.find((x) => x.loader.stable) ?? lista[0]
-    if (!elegido) throw new Error(`Fabric no soporta Minecraft ${mc}`)
 
-    perfil = await pedirJson<PerfilFabric>(
-      `${META}/${encodeURIComponent(mc)}/${encodeURIComponent(elegido.loader.version)}/profile/json`
-    )
-    await fs.mkdir(dirname(archivo), { recursive: true })
-    await fs.writeFile(archivo, JSON.stringify(perfil))
-  } catch (e) {
+  if (fijada) perfil = await leerCache(archivoDe(fijada))
+
+  if (!perfil) {
     try {
-      perfil = JSON.parse(await fs.readFile(archivo, 'utf-8')) as PerfilFabric
-    } catch {
-      throw e
+      if (!version) {
+        const lista = await pedirJson<{ loader: { version: string; stable: boolean } }[]>(
+          `${META}/${encodeURIComponent(mc)}`
+        )
+        const elegido = lista.find((x) => x.loader.stable) ?? lista[0]
+        if (!elegido) throw new Error(`Fabric no soporta Minecraft ${mc}`)
+        if (!VERSION_LOADER.test(elegido.loader.version)) throw new Error('Versión de Fabric inválida')
+        version = elegido.loader.version
+      }
+      perfil = await pedirJson<PerfilFabric>(
+        `${META}/${encodeURIComponent(mc)}/${encodeURIComponent(version)}/profile/json`
+      )
+      await fs.mkdir(dirname(archivoDe(version)), { recursive: true })
+      await fs.writeFile(archivoDe(version), JSON.stringify(perfil))
+    } catch (e) {
+      if (!fijada) {
+        const c = await cacheMasReciente(dir, mc)
+        if (c) {
+          perfil = c.perfil
+          version = c.version
+        }
+      }
+      if (!perfil) throw e
     }
   }
+  if (!perfil) throw new Error('No se pudo obtener el perfil de Fabric')
 
   const libreras = perfil.libraries.map(aLibreria)
   const pendientes: Pendiente[] = libreras.map((l) => {
@@ -93,6 +142,7 @@ export async function asegurarFabric(
   await descargarLote(pendientes, 'Descargando Fabric', avisar)
 
   return {
+    version,
     mainClass: perfil.mainClass,
     jvm: perfil.arguments?.jvm ?? [],
     game: perfil.arguments?.game ?? [],

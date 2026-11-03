@@ -37,6 +37,17 @@ const api = {
     listar: (id: string) => ipcRenderer.invoke('mods:listar', id),
     alternar: (id: string, archivo: string) => ipcRenderer.invoke('mods:alternar', id, archivo),
     eliminar: (id: string, archivo: string) => ipcRenderer.invoke('mods:eliminar', id, archivo)
+  },
+  eventos: {
+    config: () => ipcRenderer.invoke('eventos:config'),
+    guardarConfig: (url: string) => ipcRenderer.invoke('eventos:guardarConfig', url),
+    listar: () => ipcRenderer.invoke('eventos:listar'),
+    instalar: (id: string) => ipcRenderer.invoke('eventos:instalar', id),
+    onProgreso: (callback: (id: string, p: Progreso) => void): (() => void) => {
+      const manejador = (_e: unknown, id: string, p: Progreso): void => callback(id, p)
+      ipcRenderer.on('eventos:progreso', manejador)
+      return () => ipcRenderer.removeListener('eventos:progreso', manejador)
+    }
   }
 }
 

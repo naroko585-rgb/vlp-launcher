@@ -13,9 +13,9 @@ function Mods(): React.JSX.Element {
 
   useEffect(() => {
     window.api.instancias.listar().then((lista) => {
-      const conMods = lista.filter((i) => i.loader !== 'vanilla')
-      setInstancias(conMods)
-      if (conMods.length > 0) setIdInstancia(conMods[0].id)
+      const editables = lista.filter((i) => i.loader !== 'vanilla' && !i.evento)
+      setInstancias(editables)
+      if (editables.length > 0) setIdInstancia(editables[0].id)
     })
   }, [])
 
@@ -77,7 +77,11 @@ function Mods(): React.JSX.Element {
         <h2>Mods</h2>
         <p className="sub">Buscador e instalación de modificaciones.</p>
         <div className="tarjeta">
-          <p>Crea una instancia con Fabric (o Forge/NeoForge) en la Biblioteca para instalar mods.</p>
+          <p>
+            Crea una instancia con Fabric en la Biblioteca para instalar mods. Las instancias de
+            eventos son oficiales y no se editan: usa &quot;Copia editable&quot; si quieres
+            modificarlas.
+          </p>
         </div>
       </section>
     )

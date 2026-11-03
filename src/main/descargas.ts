@@ -27,13 +27,6 @@ export interface Libreria {
   natives?: Record<string, string>
 }
 
-export interface Pendiente {
-  url: string
-  sha1: string
-  size: number
-  destino: string
-}
-
 export type Arg = string | { rules?: Regla[]; value: string | string[] }
 
 export interface VersionJson {
@@ -46,6 +39,13 @@ export interface VersionJson {
   downloads: { client: Artefacto }
   libraries: Libreria[]
   assetIndex: { id: string; url: string; sha1: string; size: number }
+}
+
+export interface Pendiente {
+  url: string
+  sha1: string
+  size: number
+  destino: string
 }
 
 export interface Progreso {

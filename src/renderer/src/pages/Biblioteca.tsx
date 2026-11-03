@@ -153,10 +153,19 @@ function Biblioteca(): React.JSX.Element {
         {instancias.map((i) => (
           <div key={i.id} className="tarjeta instancia">
             <div>
-              <h3>{i.nombre}</h3>
+              <h3>
+                {i.nombre}
+                {i.evento && <span className="insignia">Evento · rev {i.evento.revision}</span>}
+              </h3>
               <p className="sub chico">
                 Minecraft {i.version} · {i.loader}
+                {i.loaderVersion ? ` ${i.loaderVersion}` : ''}
               </p>
+              {i.evento?.servidor && (
+                <p className="sub chico">
+                  Servidor: <span className="seleccionable">{i.evento.servidor}</span>
+                </p>
+              )}
               {progreso[i.version] && <p className="sub chico">{progreso[i.version]}</p>}
               {estados[i.id] && <p className="sub chico estado">{estados[i.id]}</p>}
             </div>
@@ -175,7 +184,7 @@ function Biblioteca(): React.JSX.Element {
                 Carpeta
               </button>
               <button className="btn" onClick={() => duplicar(i.id)}>
-                Duplicar
+                {i.evento ? 'Copia editable' : 'Duplicar'}
               </button>
               <button className="btn peligro" onClick={() => eliminar(i)}>
                 Eliminar
